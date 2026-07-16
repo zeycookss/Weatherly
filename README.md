@@ -17,19 +17,15 @@ A modern, atmospheric weather forecasting web application built using HTML, CSS,
 
 ---
 
-## 🌐 Live Demo
-
-> Coming Soon
-
-After publishing with GitHub Pages:
+## ⋆⭒˚.⋆🪐 ⋆⭒˚.⋆ Live Demo
 
 https://zeycookss.github.io/Weatherly/
 
 ---
 
-# ✨ Features
+# 🕸️ Features
 
-## 🌍 Current Weather
+## ⏾ Current Weather
 
 - Search weather by city
 - Current temperature
@@ -47,7 +43,7 @@ https://zeycookss.github.io/Weatherly/
 
 ---
 
-## 📅 Forecast
+## 𓊆ྀི❤︎𓊇ྀི Forecast
 
 - Hourly Forecast
 - 5-Day Forecast
@@ -55,7 +51,7 @@ https://zeycookss.github.io/Weatherly/
 
 ---
 
-## ⚡ Smart Features
+## ೀ Smart Features
 
 - Search by city
 - Save Favorite Cities
@@ -67,7 +63,7 @@ https://zeycookss.github.io/Weatherly/
 
 ---
 
-## 🎨 UI Features
+## 🔮 UI Features
 
 - Glassmorphism Design
 - Modern Dashboard Layout
@@ -81,48 +77,17 @@ https://zeycookss.github.io/Weatherly/
 
 ---
 
-# 🛠 Technologies Used
+# 🪄✨ Technologies Used
 
 - HTML5
 - CSS3
 - Vanilla JavaScript
 - OpenWeather API
 
----
-
-# 📁 Project Structure
-
-```
-Weatherly/
-
-│
-
-├── index.html
-
-├── style.css
-
-├── script.js
-
-├── README.md
-
-│
-
-├── assets/
-
-│   ├── icons/
-
-│   ├── images/
-
-│   └── fonts/
-
-│
-
-└── screenshots/
-```
 
 ---
 
-# 🚀 Installation
+# ݁ ˖Ი𐑼⋆ Installation
 
 1. Clone the repository
 
@@ -144,7 +109,7 @@ const apiKey = "YOUR_API_KEY";
 
 ---
 
-# 💡 Future Improvements
+# ⋆˚🐾˖° Future Improvements
 
 - Weather animations (rain, snow, thunder, sunshine)
 - Dynamic backgrounds based on weather
@@ -159,7 +124,7 @@ const apiKey = "YOUR_API_KEY";
 
 ---
 
-# 🎯 Learning Goals
+# 🎳 Learning Goals
 
 This project helped me practice:
 
@@ -175,7 +140,7 @@ This project helped me practice:
 
 ---
 
-# 🙌 Credits
+# ˙ . ꒷ 🪼 . 𖦹˙—  Credits
 
 Weather Data
 
@@ -191,7 +156,7 @@ Google Fonts (Poppins)
 
 ---
 
-# 👩‍💻 Author
+#  ִֶָ. ..𓂃 ࣪ ִֶָ🪽་༘࿐ Author
 
 **Zainab Zulfiqar**
 
@@ -204,11 +169,11 @@ https://github.com/zeycookss
 
 ---
 
-# ⭐ Support
+# ⋆˚࿔ Support
 
 If you like this project,
 
-⭐ Star the repository
+𓇼 Star the repository
 
 🍴 Fork it
 
@@ -216,4 +181,4 @@ If you like this project,
 
 ---
 
-Made with ❤️ using HTML, CSS & JavaScript.
+Made with ❤︎ using HTML, CSS & JavaScript.
