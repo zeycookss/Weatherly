@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weatherly — Your Sky, Beautifully</title>
+  <meta name="description" content="Weatherly is a cozy, immersive weather app that shows live conditions, hourly and 5-day forecasts, air quality, and more." />
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌦️</text></svg>"
+  
+
+  <!-- Google Fonts: Outfit for headings/big numbers, Plus Jakarta Sans for body text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-theme="dark" data-weather="clear-night">
+
+  <!-- ============================================
+       BACKGROUND SYSTEM
+       Two stacked gradient layers so we can crossfade
+       smoothly between weather moods instead of
+       snapping straight to a new background.
+       ============================================ -->
+  <div class="bg-layer" id="bgLayerA"></div>
+  <div class="bg-layer" id="bgLayerB"></div>
+  <div class="night-overlay" id="nightOverlay"></div>
+  <div class="stars-layer" id="starsLayer" aria-hidden="true"></div>
+
+  <!-- Rain / snow / clouds / fog / lightning all get added in here by JS -->
+  <div class="weather-anim-layer" id="weatherAnimLayer" aria-hidden="true"></div>
+
+  <div class="app">
+
+    <!-- ============================================
+         TOP BAR — brand, search, location, unit + theme toggles
+         ============================================ -->
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Weatherly home">
+        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="10" fill="url(#brandGradient)" />
+          <ellipse cx="20" cy="20" rx="18" ry="7" fill="none" stroke="var(--cyan)" stroke-opacity="0.55" stroke-width="1.2" />
+          <defs>
+            <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--cyan)" />
+              <stop offset="100%" stop-color="var(--violet)" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand-name">Weatherly</span>
+      </a>
+
+      <form class="search-form" id="searchForm" role="search">
+        <label for="cityInput" class="sr-only">Search for a city</label>
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+          <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <input
+          type="text"
+          id="cityInput"
+          placeholder="Search a city... (e.g. Tokyo)"
+          autocomplete="off"
+          aria-label="City name"
+        />
+        <button type="submit" class="btn-search" aria-label="Search">Search</button>
+      </form>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" id="locationBtn" type="button" aria-label="Use my current location" title="Use my location">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2 L12 5 M12 19 L12 22 M2 12 L5 12 M19 12 L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+        </button>
+
+        <button class="pill-toggle" id="unitToggle" type="button" aria-label="Switch between Celsius and Fahrenheit">
+          <span class="pill-option active" data-unit="C">°C</span>
+          <span class="pill-option" data-unit="F">°F</span>
+        </button>
+
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle dark or light mode" title="Toggle theme">
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Error banner: only shown when something goes wrong -->
+    <div class="error-banner" id="errorBanner" role="alert" hidden>
+      <span id="errorText"></span>
+      <button type="button" id="errorCloseBtn" aria-label="Dismiss error">&times;</button>
+    </div>
+
+    <main>
+      <!-- ============================================
+           HERO — the big immersive landing section
+           ============================================ -->
+      <section class="hero" id="hero" aria-live="polite">
+
+        <div class="hero-orb-wrap">
+          <!-- The "Living Sky Orb" — this is the signature visual of the whole
+               app. It's one SVG whose colors, glow and little extra layers
+               (clouds/rain/snow/lightning) change depending on the real
+               weather condition we get back from the API. -->
+          <svg id="skyOrb" class="sky-orb" viewBox="0 0 300 300" role="img" aria-label="Illustration of the current weather">
+            <defs>
+              <radialGradient id="orbGradient" cx="35%" cy="30%" r="75%">
+                <stop id="orbStopA" offset="0%" stop-color="#ffe9b8" />
+                <stop id="orbStopB" offset="55%" stop-color="#ffb347" />
+                <stop id="orbStopC" offset="100%" stop-color="#c96b1f" />
+              </radialGradient>
+              <filter id="orbGlow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="9" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- orbit rings, purely decorative — the "space" touch -->
+            <ellipse id="orbRingOuter" class="orb-ring" cx="150" cy="150" rx="132" ry="48" />
+            <ellipse id="orbRingInner" class="orb-ring orb-ring-inner" cx="150" cy="150" rx="108" ry="34" />
+
+            <!-- tiny satellite that travels around the outer ring -->
+            <circle id="orbSatellite" class="orb-satellite" r="4.5" cx="282" cy="150" />
+
+            <!-- the core sun/moon body -->
+            <circle id="orbCore" cx="150" cy="150" r="70" fill="url(#orbGradient)" filter="url(#orbGlow)" />
+
+            <!-- sun rays, shown for clear-day only -->
+            <g id="orbRays" class="orb-rays">
+              <line x1="150" y1="48" x2="150" y2="66" />
+              <line x1="150" y1="234" x2="150" y2="252" />
+              <line x1="48" y1="150" x2="66" y2="150" />
+              <line x1="234" y1="150" x2="252" y2="150" />
+              <line x1="76" y1="76" x2="89" y2="89" />
+              <line x1="211" y1="211" x2="224" y2="224" />
+              <line x1="211" y1="89" x2="224" y2="76" />
+              <line x1="76" y1="224" x2="89" y2="211" />
+            </g>
+
+            <!-- craters, shown for clear-night (moon) only -->
+            <g id="orbCraters" class="orb-craters">
+              <circle cx="128" cy="122" r="9" />
+              <circle cx="168" cy="142" r="13" />
+              <circle cx="140" cy="176" r="7" />
+            </g>
+
+            <!-- floating light particles, clear-day only -->
+            <g id="orbParticles" class="orb-particles"></g>
+
+            <!-- soft clouds drifting across the lower half of the orb —
+                 used for clouds / rain / thunderstorm / mist -->
+            <g id="orbClouds" class="orb-clouds">
+              <ellipse cx="118" cy="188" rx="46" ry="22" />
+              <ellipse cx="168" cy="196" rx="58" ry="26" />
+              <ellipse cx="150" cy="172" rx="40" ry="20" />
+            </g>
+
+            <!-- rain drops falling from the cloud layer -->
+            <g id="orbRain" class="orb-rain">
+              <line x1="128" y1="214" x2="122" y2="230" />
+              <line x1="148" y1="218" x2="142" y2="236" />
+              <line x1="168" y1="212" x2="162" y2="228" />
+              <line x1="188" y1="216" x2="182" y2="232" />
+            </g>
+
+            <!-- snowflakes drifting below the cloud layer -->
+            <g id="orbSnow" class="orb-snow">
+              <circle cx="124" cy="224" r="3" />
+              <circle cx="146" cy="234" r="3" />
+              <circle cx="168" cy="222" r="3" />
+              <circle cx="188" cy="230" r="3" />
+            </g>
+
+            <!-- lightning bolt, thunderstorm only -->
+            <g id="orbBolt" class="orb-bolt">
+              <polygon points="156,196 138,224 150,224 144,246 168,212 154,212" />
+            </g>
+
+            <!-- fog bands, mist only -->
+            <g id="orbFog" class="orb-fog">
+              <rect x="88" y="196" width="124" height="6" rx="3" />
+              <rect x="98" y="210" width="104" height="6" rx="3" />
+              <rect x="92" y="224" width="116" height="6" rx="3" />
+            </g>
+          </svg>
+
+          <button class="favorite-btn" id="favoriteBtn" type="button" aria-label="Add city to favorites" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21s-7.2-4.6-9.9-9C.5 8.6 2 5 5.6 5c2 0 3.4 1 4.4 2.5C11 6 12.4 5 14.4 5 18 5 19.5 8.6 21.9 12c-2.7 4.4-9.9 9-9.9 9Z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="hero-info">
+          <p class="hero-condition-label" id="conditionLabel">Loading sky…</p>
+          <h1 class="hero-city" id="cityName">—</h1>
+          <p class="hero-date" id="cityDate">—</p>
+
+          <div class="hero-temp-row">
+            <span class="hero-temp" id="currentTemp">--</span>
+            <span class="hero-temp-unit" id="tempUnit">°C</span>
+          </div>
+
+          <p class="hero-desc" id="weatherDesc">Search a city or use your location to begin.</p>
+
+          <div class="hero-meta">
+            <span class="meta-chip" id="feelsLikeChip">Feels like --°</span>
+            <span class="meta-chip" id="tempHighLow">H: --°  L: --°</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================
+           STATS GRID — the little glass detail cards
+           ============================================ -->
+      <section class="stats-grid" id="statsGrid" aria-label="Weather details">
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">🌡️</span>
+          <span class="stat-label">Feels Like</span>
+          <span class="stat-value" id="feelsLikeValue">--°</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">💧</span>
+          <span class="stat-label">Humidity</span>
+          <span class="stat-value" id="humidityValue">--%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">🌬️</span>
+          <span class="stat-label">Wind Speed</span>
+          <span class="stat-value" id="windValue">-- km/h</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">📈</span>
+          <span class="stat-label">Pressure</span>
+          <span class="stat-value" id="pressureValue">-- hPa</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">👁️</span>
+          <span class="stat-label">Visibility</span>
+          <span class="stat-value" id="visibilityValue">-- km</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">☀️</span>
+          <span class="stat-label">UV Index</span>
+          <span class="stat-value" id="uvValue">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">🍃</span>
+          <span class="stat-label">Air Quality</span>
+          <span class="stat-value" id="aqiValue">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" aria-hidden="true">🌧️</span>
+          <span class="stat-label">Chance of Rain</span>
+          <span class="stat-value" id="rainChanceValue">--%</span>
+        </div>
+      </section>
+
+      <!-- ============================================
+           SUNRISE / SUNSET ARC
+           ============================================ -->
+      <section class="sun-times glass-card" id="sunTimes" aria-label="Sunrise and sunset">
+        <div class="sun-times-header">
+          <h2>Sun Path</h2>
+        </div>
+        <svg id="sunArc" class="sun-arc" viewBox="0 0 340 120" aria-hidden="true">
+          <path id="sunArcPath" d="M 20 110 A 150 150 0 0 1 320 110" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round" />
+          <circle id="sunDot" cx="20" cy="110" r="7" />
+        </svg>
+        <div class="sun-times-labels">
+          <div class="sun-time-item">
+            <span class="sun-time-icon" aria-hidden="true">🌅</span>
+            <span class="sun-time-text">
+              <span class="sun-time-label">Sunrise</span>
+              <span class="sun-time-value" id="sunriseTime">--:--</span>
+            </span>
+          </div>
+          <div class="sun-time-item">
+            <span class="sun-time-icon" aria-hidden="true">🌇</span>
+            <span class="sun-time-text">
+              <span class="sun-time-label">Sunset</span>
+              <span class="sun-time-value" id="sunsetTime">--:--</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================
+           HOURLY FORECAST — scrollable row
+           ============================================ -->
+      <section class="hourly-forecast" aria-label="Hourly forecast">
+        <div class="section-heading">
+          <h2>Hourly Forecast</h2>
+          <span class="section-subtext">Next 24 hours</span>
+        </div>
+        <div class="hourly-scroll" id="hourlyContainer">
+          <!-- hour cards get injected here by displayHourlyForecast() -->
+        </div>
+      </section>
+
+      <!-- ============================================
+           5-DAY FORECAST
+           ============================================ -->
+      <section class="daily-forecast" aria-label="5 day forecast">
+        <div class="section-heading">
+          <h2>5-Day Forecast</h2>
+          <span class="section-subtext">What the week looks like</span>
+        </div>
+        <div class="daily-grid" id="dailyContainer">
+          <!-- day cards get injected here by displayForecast() -->
+        </div>
+      </section>
+
+      <!-- ============================================
+           FAVORITES
+           ============================================ -->
+      <section class="favorites-section" aria-label="Favorite cities">
+        <div class="section-heading">
+          <h2>Favorite Cities</h2>
+          <span class="section-subtext">Tap the heart on any city to save it here</span>
+        </div>
+        <div class="chip-row" id="favoritesContainer">
+          <p class="empty-state" id="favoritesEmpty">No favorites yet - search a city and tap the heart above the temperature.</p>
+        </div>
+      </section>
+
+      <!-- ============================================
+           RECENT SEARCHES
+           ============================================ -->
+      <section class="history-section" aria-label="Recent searches">
+        <div class="section-heading">
+          <h2>Recent Searches</h2>
+          <button class="link-btn" id="clearHistoryBtn" type="button">Clear history</button>
+        </div>
+        <div class="chip-row" id="historyContainer">
+          <p class="empty-state" id="historyEmpty">Your recent searches will show up here.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Built with HTML, CSS &amp; JavaScript for a web development class project. Weather data courtesy of <a href="https://openweathermap.org/" target="_blank" rel="noopener">OpenWeather</a>.</p>
+      <p class="footer-fine">&copy; <span id="currentYear"></span> Weatherly. Made by a student of 11th grade.</p>
+    </footer>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-orb"></div>
+    <p>Reading the sky…</p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
